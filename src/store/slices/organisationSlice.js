@@ -1,21 +1,6 @@
 // src/store/slices/organisationSlice.js
 
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getOrganisationsApi } from "../../api/organisationApi";
-
-export const fetchOrganisations = createAsyncThunk(
-  "organisation/fetchOrganisations",
-  async (_, { rejectWithValue }) => {
-    try {
-      const data = await getOrganisationsApi();
-      return data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data || "Failed to fetch organisations"
-      );
-    }
-  }
-);
+import { createSlice } from "@reduxjs/toolkit";
 
 const organisationSlice = createSlice({
   name: "organisation",
@@ -24,22 +9,43 @@ const organisationSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchOrganisations.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchOrganisations.fulfilled, (state, action) => {
-        state.loading = false;
-        state.organisations = action.payload;
-      })
-      .addCase(fetchOrganisations.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+  reducers: {
+    setOrganisations: (state, action) => {
+      state.organisations = action.payload;
+    },
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
+    addOrganisation: (state, action) => {
+      state.organisations.unshift(action.payload);
+    },
+    updateOrganisation: (state, action) => {
+      const { id, data } = action.payload;
+      const index = state.organisations.findIndex(org => org.id === id);
+      if (index !== -1) {
+        state.organisations[index] = { ...state.organisations[index], ...data };
+      }
+    },
+    removeOrganisation: (state, action) => {
+      state.organisations = state.organisations.filter(org => org.id !== action.payload);
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
   },
 });
+
+export const {
+  setOrganisations,
+  setLoading,
+  setError,
+  addOrganisation,
+  updateOrganisation,
+  removeOrganisation,
+  clearError,
+} = organisationSlice.actions;
 
 export default organisationSlice.reducer;

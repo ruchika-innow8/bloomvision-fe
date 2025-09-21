@@ -23,8 +23,8 @@ export default function Dashboard() {
 
   const dashboardCards = [
     {
-      title: "Organizations",
-      description: "Manage organization users and settings",
+      title: "Organisations",
+      description: "Manage organisation users and settings",
       icon: <BusinessIcon sx={{ fontSize: 40, color: "#1976d2" }} />,
       action: () => navigate("/organisation"),
     },

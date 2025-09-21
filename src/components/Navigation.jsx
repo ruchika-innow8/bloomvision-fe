@@ -69,7 +69,7 @@ export default function Navigation() {
               fontWeight: location.pathname === "/organisation" ? 600 : 400,
             }}
           >
-            Organizations
+            Organisations
           </Button>
         </Box>
 

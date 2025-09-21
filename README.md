@@ -1,10 +1,10 @@
 # BloomVision Frontend
 
-A React application for managing BloomVision organizations and users.
+A React application for managing BloomVision organisations and users.
 
 ## Features
 
-- **Organisation Management**: View and manage organization users with a responsive table
+- **Organisation Management**: View and manage organisation users with a responsive table
 - **Temporary Login Bypass**: Test the application without authentication
 - **Redux State Management**: Centralized state management with Redux Toolkit
 - **Material-UI Components**: Modern, responsive UI components
@@ -60,8 +60,8 @@ localStorage.setItem("bypassAuth", "true");
 
 ## Organisation Page Features
 
-- **Responsive Table**: Displays organization data with proper mobile support
-- **Row Selection**: Select individual or all organizations with checkboxes
+- **Responsive Table**: Displays organisation data with proper mobile support
+- **Row Selection**: Select individual or all organisations with checkboxes
 - **Avatar Generation**: Automatic avatar creation based on business names
 - **Status Indicators**: Visual chips showing subscription and template status
 - **Action Buttons**: Edit, view, delete, and template access controls
