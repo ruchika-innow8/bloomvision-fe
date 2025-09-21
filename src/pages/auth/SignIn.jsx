@@ -6,28 +6,63 @@ import { jwtDecode } from "jwt-decode";
 import { loginSuccess, bypassLogin } from "../../store/slices/authSlice";
 import { useNavigate } from "react-router-dom";
 import { loginWithEmail, loginWithGoogle } from "../../api/authApi";
+import { loginSchema } from "../../utils/validation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Container,
+  Paper,
+  InputAdornment,
+  IconButton,
+  Divider,
+  CircularProgress,
+  Link,
+  Grid,
+} from "@mui/material";
+import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function SignIn() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false); // Add loading state
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+
+  const handleMouseDownPassword = (event) => {
+    event.preventDefault();
+  };
 
   // Email/Password login
-  const handleEmailLogin = async (e) => {
-    e.preventDefault();
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+  const handleEmailLogin = async (data) => {
+    setLoading(true); // Set loading to true on submission
+    const { email, password } = data;
 
     try {
-      const data = await loginWithEmail(email, password);
-      dispatch(loginSuccess(data));
+      const result = await loginWithEmail(email, password);
+      dispatch(loginSuccess(result));
       navigate("/dashboard");
     } catch (error) {
       console.error("Email login failed", error);
+    } finally {
+      setLoading(false); // Set loading to false after submission (success or error)
     }
   };
 
   // Google login
   const handleGoogleLogin = async (credentialResponse) => {
+    setLoading(true); // Set loading to true for Google login as well
     try {
       const token = credentialResponse.credential;
       const decoded = jwtDecode(token); // ✅ works now
@@ -37,6 +72,8 @@ export default function SignIn() {
       navigate("/dashboard");
     } catch (error) {
       console.error("Google login failed", error);
+    } finally {
+      setLoading(false); // Set loading to false
     }
   };
 
@@ -47,59 +84,150 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+    <Container
+      component="main"
+      maxWidth="xs"
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        backgroundColor: (theme) => theme.palette.background.default,
+      }}
+    >
+      <Paper
+        elevation={6}
+        sx={{
+          padding: 4,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          borderRadius: 2,
+          width: "100%",
+        }}
+      >
+        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
           Sign In
-        </h2>
+        </Typography>
 
         {/* Email/Password Form */}
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <input
-            type="email"
+        <Box
+          component="form"
+          onSubmit={handleSubmit(handleEmailLogin)}
+          noValidate
+          sx={{ mt: 1, width: "100%" }}
+        >
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Email Address"
             name="email"
-            placeholder="Email"
-            className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-            required
+            autoComplete="email"
+            autoFocus
+            {...register("email")}
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Email />
+                </InputAdornment>
+              ),
+            }}
           />
-          <input
-            type="password"
+          <TextField
+            margin="normal"
+            required
+            fullWidth
             name="password"
-            placeholder="Password"
-            className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-            required
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            id="password"
+            autoComplete="current-password"
+            {...register("password")}
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleClickShowPassword}
+                    onMouseDown={handleMouseDownPassword}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
-          <button
+          <Grid container justifyContent="flex-end">
+            <Grid item>
+              <Link href="#" variant="body2">
+                Forgot password?
+              </Link>
+            </Grid>
+          </Grid>
+          <Button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+            disabled={loading} // Disable button when loading
           >
-            Sign In
-          </button>
-        </form>
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Sign In"} {/* Show spinner when loading */}
+          </Button>
+        </Box>
 
-        <div className="my-6 text-center text-gray-400">OR</div>
+        <Divider sx={{ my: 3, width: "100%" }}>
+          <Typography variant="caption" color="text.secondary">
+            OR
+          </Typography>
+        </Divider>
 
         {/* Google Login */}
-        <div className="flex justify-center">
+        <Box sx={{ mt: 2, mb: 2 }}>
           <GoogleLogin
             onSuccess={handleGoogleLogin}
             onError={() => console.error("Google Login Failed")}
+            disabled={loading} // Disable Google login when main form is loading
           />
-        </div>
+        </Box>
 
         {/* Temporary Bypass Login for Testing */}
-        <div className="mt-6 pt-4 border-t border-gray-200">
-          <button
+        <Box
+          sx={{
+            mt: 3,
+            pt: 2,
+            borderTop: 1,
+            borderColor: "divider",
+            width: "100%",
+            textAlign: "center",
+          }}
+        >
+          <Button
             onClick={handleBypassLogin}
-            className="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition text-sm"
+            fullWidth
+            variant="contained"
+            sx={{ mb: 1, backgroundColor: "#FF9800" }}
+            disabled={loading} // Disable bypass login when main form is loading
           >
             🚀 Bypass Login (Testing Only)
-          </button>
-          <p className="text-xs text-gray-500 text-center mt-2">
+          </Button>
+          <Typography variant="caption" color="text.secondary">
             Skip authentication to test Organisation page
-          </p>
-        </div>
-      </div>
-    </div>
+          </Typography>
+        </Box>
+      </Paper>
+    </Container>
   );
 }

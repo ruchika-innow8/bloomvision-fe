@@ -1,6 +1,6 @@
 // src/api/axiosClient.js
 import axios from 'axios';
-import { store } from '../store/store';
+import store from '../store/store';
 import { logout } from '../store/slices/authSlice';
 
 const API_BASE_URL = "http://localhost:5000";

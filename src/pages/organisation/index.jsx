@@ -12,12 +12,6 @@ export default function OrganisationPage() {
 
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Organisation Users
-        </Typography>
-      </Box>
-      
       <OrganisationTable data={organisations} loading={loading} />
     </Container>
   );

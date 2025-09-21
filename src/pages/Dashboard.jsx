@@ -45,9 +45,6 @@ export default function Dashboard() {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Welcome back, {user?.name || "User"}! 👋
-        </Typography>
         <Typography variant="body1" color="text.secondary">
           Here's what's happening with your BloomVision admin panel today.
         </Typography>

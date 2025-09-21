@@ -1,6 +1,7 @@
 // src/api/authApi.js
 
 import axiosInstance from "./axiosClient";
+import { loginSchema } from "../utils/validation";
 
 // Email/Password login
 export const loginWithEmail = async (email, password) => {

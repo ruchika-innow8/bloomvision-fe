@@ -35,6 +35,7 @@ const authSlice = createSlice({
         id: "temp-user",
         name: "Test User",
         email: "test@example.com",
+        role: "Admin", // Add a default role for bypass login
       };
       state.token = "temp-token";
       state.isAuthenticated = true;
