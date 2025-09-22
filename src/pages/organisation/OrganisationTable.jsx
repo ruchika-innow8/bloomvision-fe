@@ -1,5 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { formatDateToLong } from "../../utils/Helper";
+import { useOrganisations } from "../../hooks/useOrganisations";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 import {
   Box,
   Checkbox,
@@ -25,6 +30,8 @@ import {
   Skeleton,
   Typography,
   CircularProgress,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import {
   History as HistoryIcon,
@@ -39,13 +46,26 @@ import {
 export default function OrganisationTable({ data, loading }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const {
+    deleteOrganisation,
+    updateOrganisation,
+    updateTrialDate,
+    fetchOrganisations,
+  } = useOrganisations();
   const [selectedIds, setSelectedIds] = useState([]);
   const [editing, setEditing] = useState({
     open: false,
     id: null,
     field: null,
     value: "",
+    organisation: null,
+    isLoading: false,
   });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    organisation: null,
+  });
+  const [successMessage, setSuccessMessage] = useState("");
 
   const rows = useMemo(() => data ?? [], [data]);
   const allSelected = rows.length > 0 && selectedIds.length === rows.length;
@@ -62,18 +82,99 @@ export default function OrganisationTable({ data, loading }) {
     );
   };
 
-  const openEdit = (row, field) => {
-    const current =
-      field === "trial_starts" ? row.trial_starts : row.trial_ends;
-    setEditing({ open: true, id: row.id, field, value: current || "" });
+  const openEdit = (organisation, field) => {
+    const currentValue =
+      field === "trial_ends"
+        ? organisation.trial_ends
+        : organisation.trial_starts;
+    const dateValue = currentValue ? dayjs(currentValue) : dayjs();
+
+    setEditing({
+      open: true,
+      id: organisation.id,
+      field,
+      value: dateValue,
+      organisation,
+      isLoading: false,
+    });
   };
 
   const closeEdit = () =>
-    setEditing({ open: false, id: null, field: null, value: "" });
+    setEditing({
+      open: false,
+      id: null,
+      field: null,
+      value: "",
+      organisation: null,
+      isLoading: false,
+    });
 
-  const saveEdit = () => {
-    // Placeholder: integrate with API to PATCH date later
-    closeEdit();
+  const saveEdit = async () => {
+    if (!editing.value || !editing.organisation) return;
+
+    try {
+      const selectedDate = editing.value.format("YYYY-MM-DD");
+
+      // Prepare the API payload according to the specification
+      const payload = {
+        skeletons: [], // Empty array as per the API spec
+        trial_ends: editing.field === "trial_ends" ? selectedDate : undefined,
+        owner_id:
+          editing.organisation.owner?.id || editing.organisation.owner_id,
+      };
+
+      // Show loading state for the save button
+      setEditing((prev) => ({ ...prev, isLoading: true }));
+
+      // Call the trial date update API
+      await updateTrialDate(payload);
+
+      // Show success message
+      setSuccessMessage(
+        `Trial date updated successfully for ${editing.organisation.business_name}`
+      );
+
+      // Refresh the data to show updated trial date
+      await fetchOrganisations();
+
+      // Close the dialog after a short delay to show the success message
+      setTimeout(() => {
+        closeEdit();
+        setSuccessMessage("");
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to update trial date:", error);
+      // Error handling is already done in the hook - UI will show error state
+    } finally {
+      // Remove loading state
+      setEditing((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const openDeleteDialog = (organisation) => {
+    setDeleteDialog({
+      open: true,
+      organisation,
+    });
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({
+      open: false,
+      organisation: null,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteDialog.organisation) {
+      try {
+        await deleteOrganisation(deleteDialog.organisation.id);
+        closeDeleteDialog();
+      } catch (error) {
+        console.error("Failed to delete organisation:", error);
+        // Error handling is already done in the hook
+      }
+    }
   };
 
   // Generate avatar from business name
@@ -275,7 +376,8 @@ export default function OrganisationTable({ data, loading }) {
           ) : (
             <TableBody>
               {rows.map((org, index) => {
-                const isPaymentDone = org.subscription?.is_payment_done === true;
+                const isPaymentDone =
+                  org.subscription?.is_payment_done === true;
                 const templatesAllowed =
                   org.allowed_templates ?? org.templates_allowed ?? 28;
                 const trialEnd = org.trial_ends || org.trial_end;
@@ -375,8 +477,12 @@ export default function OrganisationTable({ data, loading }) {
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton size="small" sx={{ color: "#f44336" }}>
+                        <Tooltip title="Delete Organisation">
+                          <IconButton
+                            size="small"
+                            sx={{ color: "#f44336" }}
+                            onClick={() => openDeleteDialog(org)}
+                          >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -390,36 +496,122 @@ export default function OrganisationTable({ data, loading }) {
         </Table>
 
         <Dialog open={editing.open} onClose={closeEdit} maxWidth="xs" fullWidth>
-          <DialogTitle>
-            Edit {editing.field === "trial_starts" ? "Trial Start" : "Trial End"}
-          </DialogTitle>
+          <DialogTitle>Edit Trial Date</DialogTitle>
           <DialogContent>
-            <Box sx={{ mt: 1 }}>
-              <TextField
-                label="Date"
-                type="datetime-local"
-                value={
-                  editing.value
-                    ? new Date(editing.value).toISOString().slice(0, 16)
-                    : ""
-                }
-                onChange={(e) =>
-                  setEditing((p) => ({ ...p, value: e.target.value }))
-                }
-                fullWidth
-              />
+            <Box sx={{ mt: 2 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label={
+                    editing.field === "trial_ends"
+                      ? "Trial End Date"
+                      : "Trial Start Date"
+                  }
+                  value={editing.value}
+                  onChange={(newValue) => {
+                    setEditing((prev) => ({ ...prev, value: newValue }));
+                  }}
+                  disablePast
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      error: !editing.value,
+                      helperText: !editing.value ? "Please select a date" : "",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={closeEdit} variant="text">
+            <Button onClick={closeEdit} variant="outlined">
               Cancel
             </Button>
-            <Button onClick={saveEdit} variant="contained">
-              Save
+            <Button
+              onClick={saveEdit}
+              variant="contained"
+              disabled={!editing.value || editing.isLoading}
+              sx={{
+                minWidth: 100,
+                position: "relative",
+              }}
+            >
+              {editing.isLoading ? (
+                <>
+                  <CircularProgress
+                    size={16}
+                    sx={{
+                      color: "white",
+                      position: "absolute",
+                      left: "50%",
+                      top: "50%",
+                      marginLeft: "-8px",
+                      marginTop: "-8px",
+                    }}
+                  />
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={deleteDialog.open}
+          onClose={closeDeleteDialog}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle sx={{ color: "#f44336", fontWeight: 600 }}>
+            Delete Organisation
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mt: 1 }}>
+              Are you sure you want to delete{" "}
+              <strong>{deleteDialog.organisation?.business_name}</strong>?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              This action cannot be undone. All data associated with this
+              organisation will be permanently removed.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ pb: 2, px: 3 }}>
+            <Button
+              onClick={closeDeleteDialog}
+              variant="outlined"
+              sx={{ minWidth: 100 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              variant="contained"
+              color="error"
+              sx={{ minWidth: 100 }}
+            >
+              Yes, I'm sure
             </Button>
           </DialogActions>
         </Dialog>
       </TableContainer>
+
+      {/* Success message snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage("")}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage("")}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
