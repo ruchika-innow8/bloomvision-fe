@@ -116,7 +116,14 @@ export default function Navigation({ drawerWidth }) {
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
           >
-            <Avatar sx={{ width: 32, height: 32, bgcolor: "#1976d2", fontSize: "0.875rem" }}>
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: "#1976d2",
+                fontSize: "0.875rem",
+              }}
+            >
               {userInitials}
             </Avatar>
           </IconButton>

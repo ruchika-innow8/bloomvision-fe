@@ -23,12 +23,21 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSidebar } from "../contexts/SidebarContext";
-import { ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon } from "@mui/icons-material";
+import {
+  ChevronRight as ChevronRightIcon,
+  ChevronLeft as ChevronLeftIcon,
+} from "@mui/icons-material";
 
 export default function Sidebar({ drawerWidth }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isMobile, mobileOpen, handleDrawerToggle, isCollapsed, toggleCollapse } = useSidebar();
+  const {
+    isMobile,
+    mobileOpen,
+    handleDrawerToggle,
+    isCollapsed,
+    toggleCollapse,
+  } = useSidebar();
 
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
@@ -70,17 +79,21 @@ export default function Sidebar({ drawerWidth }) {
       onClose={handleDrawerToggle}
       anchor="left"
     >
-      <Box sx={{
-        display: "flex",
-        flexDirection: "column",
-        flex: 1,
-        overflow: "hidden"
-      }}>
-        <Toolbar sx={{
-          justifyContent: isCollapsed ? "center" : "flex-start",
-          py: 2,
-          minHeight: "64px !important"
-        }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          overflow: "hidden",
+        }}
+      >
+        <Toolbar
+          sx={{
+            justifyContent: isCollapsed ? "center" : "flex-start",
+            py: 2,
+            minHeight: "64px !important",
+          }}
+        >
           <Typography
             variant="h6"
             noWrap
@@ -91,10 +104,16 @@ export default function Sidebar({ drawerWidth }) {
           </Typography>
         </Toolbar>
         <Divider sx={{ bgcolor: "rgba(255,255,255,0.1)" }} />
-        <Box sx={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}> {/* Allow scrolling only for menu items if needed */}
+        <Box sx={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+          {" "}
+          {/* Allow scrolling only for menu items if needed */}
           <List sx={{ py: 1 }}>
             {menuItems.map((item) => (
-              <ListItem key={item.text} disablePadding sx={{ display: "block" }}>
+              <ListItem
+                key={item.text}
+                disablePadding
+                sx={{ display: "block" }}
+              >
                 <ListItemButton
                   onClick={() => navigate(item.path)}
                   sx={{
@@ -128,7 +147,7 @@ export default function Sidebar({ drawerWidth }) {
                     sx={{
                       opacity: isCollapsed ? 0 : 1,
                       transition: "opacity 0.2s ease",
-                      "& span": { fontWeight: 500 }
+                      "& span": { fontWeight: 500 },
                     }}
                   />
                 </ListItemButton>
@@ -136,33 +155,33 @@ export default function Sidebar({ drawerWidth }) {
             ))}
           </List>
         </Box>
-      {/* Collapse/Expand button at the bottom of sidebar */}
-      {!isMobile && (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            py: 1,
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            bgcolor: "rgba(34,46,60,0.8)",
-            mt: "auto",
-          }}
-        >
-          <IconButton
-            aria-label="toggle collapse"
-            onClick={toggleCollapse}
-            size="small"
+        {/* Collapse/Expand button at the bottom of sidebar */}
+        {!isMobile && (
+          <Box
             sx={{
-              color: "#ffffff",
-              "&:hover": {
-                bgcolor: "rgba(255,255,255,0.1)",
-              }
+              display: "flex",
+              justifyContent: "center",
+              py: 1,
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              bgcolor: "rgba(34,46,60,0.8)",
+              mt: "auto",
             }}
           >
-            {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-          </IconButton>
-        </Box>
-      )}
+            <IconButton
+              aria-label="toggle collapse"
+              onClick={toggleCollapse}
+              size="small"
+              sx={{
+                color: "#ffffff",
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.1)",
+                },
+              }}
+            >
+              {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+            </IconButton>
+          </Box>
+        )}
       </Box>
     </Drawer>
   );
