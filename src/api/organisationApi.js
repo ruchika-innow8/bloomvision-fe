@@ -87,7 +87,7 @@ export const updateOrganisationApi = async (id, organisationData) => {
 // Delete organisation
 export const deleteOrganisationApi = async (id) => {
   try {
-    const response = await axiosInstance.delete(`/organisations/owners/${id}/`);
+    const response = await axiosInstance.delete(`/organisations/${id}/`);
     return response.data;
   } catch (error) {
     // If API is not available, simulate deletion with mock data

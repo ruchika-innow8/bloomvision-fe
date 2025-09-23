@@ -205,7 +205,7 @@ const TemplateAccessModal = ({
   open,
   onClose,
   onSave,
-  organisation,
+  organisations, // Changed from organisation to organisations
   title = "Control Template Access",
   isLoading = false,
   onRefreshOrganisations, // Add this prop
@@ -227,25 +227,14 @@ const TemplateAccessModal = ({
 
   // Initialize selected templates when modal opens
   useEffect(() => {
-    if (open && organisation) {
-      // Get skeletons from organisation, defaulting to empty array if not available
-      const currentSkeletons = organisation?.skeletons || [];
-
-      // If we have skeletons, use them to pre-select templates
-      if (currentSkeletons.length > 0) {
-        setSelectedTemplates(new Set(currentSkeletons));
-      } else {
-        // If no skeletons, initialize with an empty set.
-        // If you intended to use templatesAllowed for some default selection logic,
-        // you would implement that here. For now, it's removed to fix the linter error.
-        // const templatesAllowed = organisation.allowed_templates ?? organisation.templates_allowed ?? 0;
-        setSelectedTemplates(new Set());
-      }
-
+    if (open && organisations && organisations.length > 0) {
+      // For bulk operations, we'll show all templates and let user choose
+      // In the future, you could implement logic to show intersection/union of selected templates
+      setSelectedTemplates(new Set());
       setExpandedCategories(new Set(["Centerpiece", "Bouquet", "Ceremony"]));
       setError("");
     }
-  }, [open, organisation]);
+  }, [open, organisations]);
 
   const handleClose = () => {
     if (!isLoading) {
@@ -295,18 +284,18 @@ const TemplateAccessModal = ({
   };
 
   const handleSave = async () => {
-    if (!organisation) return;
+    if (!organisations || organisations.length === 0) return;
 
     try {
       setError("");
-      // The isLoading prop is already handled by the parent component (OrganisationTable)
-      // which sets templateAccessModal.isLoading. So, no need to set local loading state here.
-      // await onSave handles the loading state in the parent.
 
+      // For bulk operations, we'll use the first organisation's trial_ends as reference
+      // In a more sophisticated implementation, you could let users choose different trial dates for each org
+      const referenceOrg = organisations[0];
       const payload = {
         skeletons: Array.from(selectedTemplates),
-        trial_ends: organisation.trial_ends || organisation.trial_end,
-        owner_id: organisation.owner?.id || organisation.owner_id,
+        trial_ends: referenceOrg.trial_ends || referenceOrg.trial_end,
+        owner_id: referenceOrg.owner?.id || referenceOrg.owner_id,
       };
 
       await onSave(payload);
@@ -381,7 +370,20 @@ const TemplateAccessModal = ({
       <Box sx={{ mt: 1 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Managing template access for:{" "}
-          <strong>{organisation?.business_name}</strong>
+          {organisations.length === 1 ? (
+            <strong>{organisations[0]?.business_name}</strong>
+          ) : (
+            <Box component="span">
+              <strong>{organisations.length} organisations</strong>
+              <Box sx={{ mt: 1, maxHeight: "200px", overflow: "auto" }}>
+                {organisations.map((org) => (
+                  <Box key={org.id} sx={{ fontSize: "0.875rem" }}>
+                    • {org.business_name}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
         </Typography>
 
         {error && (

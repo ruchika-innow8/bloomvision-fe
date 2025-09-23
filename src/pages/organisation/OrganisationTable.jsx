@@ -1,7 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { formatDateToLong } from "../../utils/Helper";
 import { useOrganisations } from "../../hooks/useOrganisations";
-import { TrialDateModal, TemplateAccessModal } from "../../components";
+import {
+  TrialDateModal,
+  TemplateAccessModal,
+  DeleteConfirmationModal,
+} from "../../components";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 // import dayjs from "dayjs";
@@ -38,13 +42,14 @@ import {
   AccessTime as AccessTimeIcon,
   LocalFlorist as LocalFloristIcon,
   Settings as SettingsIcon,
-  Visibility as VisibilityIcon,
+  ManageAccounts as ManageAccountsIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
+import { useTheme } from "@mui/material";
 
 export default function OrganisationTable({ data, loading }) {
-  // const theme = useTheme();
+  const theme = useTheme();
   // const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const {
     deleteOrganisation,
@@ -61,7 +66,7 @@ export default function OrganisationTable({ data, loading }) {
   });
   const [templateAccessModal, setTemplateAccessModal] = useState({
     open: false,
-    organisation: null,
+    organisations: [], // Changed from single organisation to array
     isLoading: false,
   });
   const [deleteDialog, setDeleteDialog] = useState({
@@ -123,18 +128,33 @@ export default function OrganisationTable({ data, loading }) {
     }
   };
 
-  const openTemplateAccessModal = (organisation) => {
-    setTemplateAccessModal({
-      open: true,
-      organisation,
-      isLoading: false,
-    });
+  // Get selected organisations
+  const selectedOrganisations = rows.filter((org) =>
+    selectedIds.includes(org.id)
+  );
+
+  const openTemplateAccessModal = (organisation = null) => {
+    if (organisation) {
+      // Single organisation mode
+      setTemplateAccessModal({
+        open: true,
+        organisations: [organisation],
+        isLoading: false,
+      });
+    } else if (selectedOrganisations.length > 0) {
+      // Bulk mode
+      setTemplateAccessModal({
+        open: true,
+        organisations: selectedOrganisations,
+        isLoading: false,
+      });
+    }
   };
 
   const closeTemplateAccessModal = () => {
     setTemplateAccessModal({
       open: false,
-      organisation: null,
+      organisations: [],
       isLoading: false,
     });
   };
@@ -143,17 +163,34 @@ export default function OrganisationTable({ data, loading }) {
     try {
       setTemplateAccessModal((prev) => ({ ...prev, isLoading: true }));
 
-      // Call the API and wait for the response
-      await updateTrialDate(payload);
+      // Call the API for each selected organisation
+      const updatePromises = templateAccessModal.organisations.map((org) => {
+        const orgPayload = {
+          ...payload,
+          owner_id: org.owner?.id || org.owner_id,
+          trial_ends: org.trial_ends || org.trial_end,
+        };
+        return updateTrialDate(orgPayload);
+      });
+
+      await Promise.all(updatePromises);
 
       setSuccessMessage(
-        `Template access updated successfully for ${templateAccessModal.organisation.business_name}`
+        `Template access updated successfully for ${
+          templateAccessModal.organisations.length
+        } organisation${
+          templateAccessModal.organisations.length > 1 ? "s" : ""
+        }`
       );
 
       // Close modal only after successful API response
-      setTimeout(() => {
+      setTimeout(async () => {
         closeTemplateAccessModal();
         setSuccessMessage("");
+        // Clear selected checkboxes after successful save
+        setSelectedIds([]);
+        // Refresh the organizations data
+        await fetchOrganisations();
       }, 1000); // Give user time to see success message
     } catch (error) {
       console.error("Failed to update template access:", error);
@@ -180,7 +217,17 @@ export default function OrganisationTable({ data, loading }) {
     if (deleteDialog.organisation) {
       try {
         await deleteOrganisation(deleteDialog.organisation.id);
+
+        setSuccessMessage(
+          `Organisation "${deleteDialog.organisation.business_name}" deleted successfully`
+        );
+
         closeDeleteDialog();
+
+        // Clear success message after 4 seconds
+        setTimeout(() => {
+          setSuccessMessage("");
+        }, 4000);
       } catch (error) {
         console.error("Failed to delete organisation:", error);
         // Error handling is already done in the hook
@@ -223,7 +270,50 @@ export default function OrganisationTable({ data, loading }) {
   };
 
   return (
-    <Box sx={{ position: "relative", minHeight: "200px" }}>
+    <Box
+      sx={{ position: "relative", minHeight: "200px", width: "100%", pb: 2 }}
+    >
+      {/* Bulk Actions Bar - shows when items are selected */}
+      {selectedIds.length > 0 && (
+        <Box
+          sx={{
+            position: "sticky",
+            top: 80,
+            right: 16,
+            zIndex: theme.zIndex.appBar + 1,
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 2,
+            p: 2,
+            bgcolor: "background.paper",
+            borderRadius: 1,
+            boxShadow: 2,
+            mb: 2,
+            width: "fit-content",
+            ml: "auto",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {selectedIds.length} selected
+          </Typography>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => openTemplateAccessModal()}
+            startIcon={<LocalFloristIcon />}
+            sx={{
+              bgcolor: "#4caf50",
+              "&:hover": {
+                bgcolor: "#45a049",
+              },
+            }}
+          >
+            Bulk Template Access
+          </Button>
+        </Box>
+      )}
+
       {loading && (
         <Box
           sx={{
@@ -236,16 +326,31 @@ export default function OrganisationTable({ data, loading }) {
             justifyContent: "center",
             alignItems: "center",
             bgcolor: "rgba(255, 255, 255, 0.7)",
-            zIndex: 1,
+            zIndex: theme.zIndex.modal - 1,
           }}
         >
           <CircularProgress />
         </Box>
       )}
-      <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
+      <TableContainer
+        component={Paper}
+        sx={{
+          boxShadow: "none",
+          borderRadius: 2,
+          overflow: "hidden",
+          mt: 2,
+        }}
+      >
         <Table size="medium" aria-label="organisation table">
           <TableHead>
-            <TableRow sx={{ bgcolor: "#f8f9fa" }}>
+            <TableRow
+              sx={{
+                bgcolor: "#f8f9fa",
+                position: "sticky",
+                top: 0,
+                zIndex: theme.zIndex.appBar - 1,
+              }}
+            >
               <TableCell
                 padding="checkbox"
                 sx={{ borderBottom: "1px solid #e0e0e0" }}
@@ -481,6 +586,12 @@ export default function OrganisationTable({ data, loading }) {
 
                     <TableCell>
                       <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <Tooltip title="Manage Account">
+                          <IconButton size="small" sx={{ color: "#666" }}>
+                            <ManageAccountsIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+
                         <Tooltip title="Control Template Access">
                           <IconButton
                             size="small"
@@ -499,11 +610,7 @@ export default function OrganisationTable({ data, loading }) {
                             <AccessTimeIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="View Details">
-                          <IconButton size="small" sx={{ color: "#666" }}>
-                            <VisibilityIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+
                         <Tooltip title="Delete Organisation">
                           <IconButton
                             size="small"
@@ -535,48 +642,21 @@ export default function OrganisationTable({ data, loading }) {
           open={templateAccessModal.open}
           onClose={closeTemplateAccessModal}
           onSave={handleTemplateAccessSave}
-          organisation={templateAccessModal.organisation}
+          organisations={templateAccessModal.organisations} // Changed from organisation to organisations
           isLoading={templateAccessModal.isLoading}
           onRefreshOrganisations={fetchOrganisations}
         />
 
-        <Dialog
+        <DeleteConfirmationModal
           open={deleteDialog.open}
           onClose={closeDeleteDialog}
-          maxWidth="xs"
-          fullWidth
-        >
-          <DialogTitle sx={{ color: "#f44336", fontWeight: 600 }}>
-            Delete Organisation
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="body1" sx={{ mt: 1 }}>
-              Are you sure you want to delete{" "}
-              <strong>{deleteDialog.organisation?.business_name}</strong>?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              This action cannot be undone. All data associated with this
-              organisation will be permanently removed.
-            </Typography>
-          </DialogContent>
-          <DialogActions sx={{ pb: 2, px: 3 }}>
-            <Button
-              onClick={closeDeleteDialog}
-              variant="outlined"
-              sx={{ minWidth: 100 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDeleteConfirm}
-              variant="contained"
-              color="error"
-              sx={{ minWidth: 100 }}
-            >
-              Yes, I'm sure
-            </Button>
-          </DialogActions>
-        </Dialog>
+          onConfirm={handleDeleteConfirm}
+          itemName={deleteDialog.organisation?.business_name}
+          title="Delete Organisation"
+          description="This action cannot be undone. All data associated with this organisation will be permanently removed."
+          confirmText="Yes, I'm sure"
+          cancelText="Cancel"
+        />
       </TableContainer>
 
       {/* Success message snackbar */}
