@@ -24,13 +24,33 @@ const organisationSlice = createSlice({
     },
     updateOrganisation: (state, action) => {
       const { id, data } = action.payload;
-      const index = state.organisations.findIndex(org => org.id === id);
+      const index = state.organisations.findIndex((org) => org.id === id);
       if (index !== -1) {
         state.organisations[index] = { ...state.organisations[index], ...data };
       }
     },
+    updateTrialDate: (state, action) => {
+      const { id, field, value } = action.payload;
+      const index = state.organisations.findIndex((org) => org.id === id);
+      if (index !== -1) {
+        state.organisations[index][field] = value;
+      }
+    },
+    updateOrganisationTemplates: (state, action) => {
+      const { id, templates_allowed, skeletons } = action.payload;
+      const index = state.organisations.findIndex((org) => org.id === id);
+      if (index !== -1) {
+        state.organisations[index].templates_allowed = templates_allowed;
+        state.organisations[index].allowed_templates = templates_allowed;
+        if (skeletons !== undefined) {
+          state.organisations[index].skeletons = skeletons;
+        }
+      }
+    },
     removeOrganisation: (state, action) => {
-      state.organisations = state.organisations.filter(org => org.id !== action.payload);
+      state.organisations = state.organisations.filter(
+        (org) => org.id !== action.payload
+      );
     },
     clearError: (state) => {
       state.error = null;
@@ -44,6 +64,8 @@ export const {
   setError,
   addOrganisation,
   updateOrganisation,
+  updateTrialDate,
+  updateOrganisationTemplates,
   removeOrganisation,
   clearError,
 } = organisationSlice.actions;

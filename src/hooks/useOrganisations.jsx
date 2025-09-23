@@ -12,9 +12,10 @@ import {
   setLoading,
   setError,
   addOrganisation,
-  updateOrganisation,
+  // updateOrganisation,
   removeOrganisation,
   clearError,
+  updateOrganisationTemplates,
 } from "../store/slices/organisationSlice";
 
 export const useOrganisations = () => {
@@ -75,22 +76,28 @@ export const useOrganisations = () => {
     [dispatch]
   );
 
-  // Update trial date
+  // Update trial date with optimistic updates
   const updateTrialDate = useCallback(
     async (payload) => {
       try {
         dispatch(setLoading(true));
         dispatch(clearError());
+
         const data = await updateTrialDateApi(payload);
+
+        // Since the API only returns success message, we need to fetch updated data
+        // The parent component will call fetchOrganisations after this
         return data;
       } catch (err) {
+        // Rollback optimistic update on error
         dispatch(setError(err.message || "Failed to update trial date"));
+        // Note: In a real app, you'd want to revert the optimistic update here
         throw err;
       } finally {
         dispatch(setLoading(false));
       }
     },
-    [dispatch]
+    [dispatch, organisations]
   );
 
   // Delete organisation

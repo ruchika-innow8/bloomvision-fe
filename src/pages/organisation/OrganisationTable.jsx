@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { formatDateToLong } from "../../utils/Helper";
 import { useOrganisations } from "../../hooks/useOrganisations";
+import { TrialDateModal, TemplateAccessModal } from "../../components";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import dayjs from "dayjs";
+// import dayjs from "dayjs";
 import {
   Box,
   Checkbox,
@@ -25,8 +25,8 @@ import {
   TextField,
   Avatar,
   Chip,
-  useTheme,
-  useMediaQuery,
+  // useTheme,
+  // useMediaQuery,
   Skeleton,
   Typography,
   CircularProgress,
@@ -44,20 +44,23 @@ import {
 } from "@mui/icons-material";
 
 export default function OrganisationTable({ data, loading }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  // const theme = useTheme();
+  // const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const {
     deleteOrganisation,
-    updateOrganisation,
+    // updateOrganisation,
     updateTrialDate,
     fetchOrganisations,
   } = useOrganisations();
   const [selectedIds, setSelectedIds] = useState([]);
-  const [editing, setEditing] = useState({
+  const [trialDateModal, setTrialDateModal] = useState({
     open: false,
-    id: null,
+    organisation: null,
     field: null,
-    value: "",
+    isLoading: false,
+  });
+  const [templateAccessModal, setTemplateAccessModal] = useState({
+    open: false,
     organisation: null,
     isLoading: false,
   });
@@ -83,71 +86,79 @@ export default function OrganisationTable({ data, loading }) {
   };
 
   const openEdit = (organisation, field) => {
-    const currentValue =
-      field === "trial_ends"
-        ? organisation.trial_ends
-        : organisation.trial_starts;
-    const dateValue = currentValue ? dayjs(currentValue) : dayjs();
-
-    setEditing({
+    setTrialDateModal({
       open: true,
-      id: organisation.id,
+      organisation,
       field,
-      value: dateValue,
+      isLoading: false,
+    });
+  };
+
+  const closeTrialDateModal = () => {
+    setTrialDateModal({
+      open: false,
+      organisation: null,
+      field: null,
+      isLoading: false,
+    });
+  };
+
+  const handleTrialDateSave = async (payload) => {
+    try {
+      setTrialDateModal((prev) => ({ ...prev, isLoading: true }));
+      await updateTrialDate(payload);
+      setSuccessMessage(
+        `Trial date updated successfully for ${trialDateModal.organisation.business_name}`
+      );
+
+      // Close modal immediately after successful update
+      setTimeout(() => {
+        closeTrialDateModal();
+        setSuccessMessage("");
+      }, 500); // Short delay to show success feedback
+    } catch (error) {
+      console.error("Failed to update trial date:", error);
+      setTrialDateModal((prev) => ({ ...prev, isLoading: false }));
+      // Error is already handled in the hook
+    }
+  };
+
+  const openTemplateAccessModal = (organisation) => {
+    setTemplateAccessModal({
+      open: true,
       organisation,
       isLoading: false,
     });
   };
 
-  const closeEdit = () =>
-    setEditing({
+  const closeTemplateAccessModal = () => {
+    setTemplateAccessModal({
       open: false,
-      id: null,
-      field: null,
-      value: "",
       organisation: null,
       isLoading: false,
     });
+  };
 
-  const saveEdit = async () => {
-    if (!editing.value || !editing.organisation) return;
-
+  const handleTemplateAccessSave = async (payload) => {
     try {
-      const selectedDate = editing.value.format("YYYY-MM-DD");
+      setTemplateAccessModal((prev) => ({ ...prev, isLoading: true }));
 
-      // Prepare the API payload according to the specification
-      const payload = {
-        skeletons: [], // Empty array as per the API spec
-        trial_ends: editing.field === "trial_ends" ? selectedDate : undefined,
-        owner_id:
-          editing.organisation.owner?.id || editing.organisation.owner_id,
-      };
-
-      // Show loading state for the save button
-      setEditing((prev) => ({ ...prev, isLoading: true }));
-
-      // Call the trial date update API
+      // Call the API and wait for the response
       await updateTrialDate(payload);
 
-      // Show success message
       setSuccessMessage(
-        `Trial date updated successfully for ${editing.organisation.business_name}`
+        `Template access updated successfully for ${templateAccessModal.organisation.business_name}`
       );
 
-      // Refresh the data to show updated trial date
-      await fetchOrganisations();
-
-      // Close the dialog after a short delay to show the success message
+      // Close modal only after successful API response
       setTimeout(() => {
-        closeEdit();
+        closeTemplateAccessModal();
         setSuccessMessage("");
-      }, 2000);
+      }, 1000); // Give user time to see success message
     } catch (error) {
-      console.error("Failed to update trial date:", error);
-      // Error handling is already done in the hook - UI will show error state
-    } finally {
-      // Remove loading state
-      setEditing((prev) => ({ ...prev, isLoading: false }));
+      console.error("Failed to update template access:", error);
+      setTemplateAccessModal((prev) => ({ ...prev, isLoading: false }));
+      throw error; // Re-throw to show error in modal
     }
   };
 
@@ -376,10 +387,11 @@ export default function OrganisationTable({ data, loading }) {
           ) : (
             <TableBody>
               {rows.map((org, index) => {
-                const isPaymentDone =
-                  org.subscription?.is_payment_done === true;
-                const templatesAllowed =
-                  org.allowed_templates ?? org.templates_allowed ?? 28;
+                // const isPaymentDone =
+                //   org.subscription?.is_payment_done === true;
+                const templatesAllowed = org.skeletons
+                  ? org.skeletons.length
+                  : org.allowed_templates ?? org.templates_allowed ?? 0;
                 const trialEnd = org.trial_ends || org.trial_end;
 
                 return (
@@ -425,7 +437,18 @@ export default function OrganisationTable({ data, loading }) {
                     </TableCell>
 
                     <TableCell>
-                      <Box sx={{ color: "#666" }}>
+                      <Box
+                        sx={{
+                          color: "#666",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        {trialDateModal.isLoading &&
+                        trialDateModal.organisation?.id === org.id ? (
+                          <CircularProgress size={16} />
+                        ) : null}
                         {formatDateToLong(trialEnd)}
                       </Box>
                     </TableCell>
@@ -459,7 +482,11 @@ export default function OrganisationTable({ data, loading }) {
                     <TableCell>
                       <Box sx={{ display: "flex", gap: 0.5 }}>
                         <Tooltip title="Control Template Access">
-                          <IconButton size="small" sx={{ color: "#666" }}>
+                          <IconButton
+                            size="small"
+                            sx={{ color: "#666" }}
+                            onClick={() => openTemplateAccessModal(org)}
+                          >
                             <LocalFloristIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -495,67 +522,23 @@ export default function OrganisationTable({ data, loading }) {
           )}
         </Table>
 
-        <Dialog open={editing.open} onClose={closeEdit} maxWidth="xs" fullWidth>
-          <DialogTitle>Edit Trial Date</DialogTitle>
-          <DialogContent>
-            <Box sx={{ mt: 2 }}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label={
-                    editing.field === "trial_ends"
-                      ? "Trial End Date"
-                      : "Trial Start Date"
-                  }
-                  value={editing.value}
-                  onChange={(newValue) => {
-                    setEditing((prev) => ({ ...prev, value: newValue }));
-                  }}
-                  disablePast
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !editing.value,
-                      helperText: !editing.value ? "Please select a date" : "",
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={closeEdit} variant="outlined">
-              Cancel
-            </Button>
-            <Button
-              onClick={saveEdit}
-              variant="contained"
-              disabled={!editing.value || editing.isLoading}
-              sx={{
-                minWidth: 100,
-                position: "relative",
-              }}
-            >
-              {editing.isLoading ? (
-                <>
-                  <CircularProgress
-                    size={16}
-                    sx={{
-                      color: "white",
-                      position: "absolute",
-                      left: "50%",
-                      top: "50%",
-                      marginLeft: "-8px",
-                      marginTop: "-8px",
-                    }}
-                  />
-                  Saving...
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <TrialDateModal
+          open={trialDateModal.open}
+          onClose={closeTrialDateModal}
+          onSave={handleTrialDateSave}
+          organisation={trialDateModal.organisation}
+          field={trialDateModal.field}
+          isLoading={trialDateModal.isLoading}
+        />
+
+        <TemplateAccessModal
+          open={templateAccessModal.open}
+          onClose={closeTemplateAccessModal}
+          onSave={handleTemplateAccessSave}
+          organisation={templateAccessModal.organisation}
+          isLoading={templateAccessModal.isLoading}
+          onRefreshOrganisations={fetchOrganisations}
+        />
 
         <Dialog
           open={deleteDialog.open}
