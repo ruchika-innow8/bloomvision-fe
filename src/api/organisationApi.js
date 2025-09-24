@@ -3,7 +3,7 @@
 import axiosInstance from "./axiosClient";
 import { mockOrganisations } from "./mockData";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "http://192.168.1.17:5000";
 
 // Get all organisations
 export const getOrganisationsApi = async () => {
@@ -18,37 +18,6 @@ export const getOrganisationsApi = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     return mockOrganisations;
-  }
-};
-
-// Create new organisation
-export const createOrganisationApi = async (organisationData) => {
-  try {
-    const response = await axiosInstance.post(
-      "/organisations/owners/",
-      organisationData
-    );
-    return response.data;
-  } catch (error) {
-    // If API is not available, simulate creation with mock data
-    console.warn("API not available, simulating creation:", error.message);
-
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Generate new ID
-    const newId = Math.max(...mockOrganisations.map((org) => org.id)) + 1;
-
-    // Create new organisation
-    const newOrganisation = {
-      id: newId,
-      ...organisationData,
-    };
-
-    // Add to mock data (in a real app, this would be handled by the API)
-    mockOrganisations.unshift(newOrganisation);
-
-    return newOrganisation;
   }
 };
 

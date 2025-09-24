@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getOrganisationsApi,
-  createOrganisationApi,
   updateOrganisationApi,
   updateTrialDateApi,
   deleteOrganisationApi,
@@ -11,8 +10,6 @@ import {
   setOrganisations,
   setLoading,
   setError,
-  addOrganisation,
-  // updateOrganisation,
   removeOrganisation,
   clearError,
   updateOrganisationTemplates,
@@ -44,9 +41,8 @@ export const useOrganisations = () => {
       try {
         dispatch(setLoading(true));
         dispatch(clearError());
-        const data = await createOrganisationApi(organisationData);
-        dispatch(addOrganisation(data));
-        return data;
+
+        return null;
       } catch (err) {
         dispatch(setError(err.message || "Failed to create organisation"));
         throw err;
@@ -64,8 +60,8 @@ export const useOrganisations = () => {
         dispatch(setLoading(true));
         dispatch(clearError());
         const data = await updateOrganisationApi(id, organisationData);
-        dispatch(updateOrganisation({ id, data }));
-        return data;
+
+        return null;
       } catch (err) {
         dispatch(setError(err.message || "Failed to update organisation"));
         throw err;
@@ -85,13 +81,11 @@ export const useOrganisations = () => {
 
         const data = await updateTrialDateApi(payload);
 
-        // Since the API only returns success message, we need to fetch updated data
-        // The parent component will call fetchOrganisations after this
         return data;
       } catch (err) {
         // Rollback optimistic update on error
         dispatch(setError(err.message || "Failed to update trial date"));
-        // Note: In a real app, you'd want to revert the optimistic update here
+
         throw err;
       } finally {
         dispatch(setLoading(false));
@@ -124,12 +118,10 @@ export const useOrganisations = () => {
   }, [dispatch]);
 
   return {
-    // Data
     organisations: organisations,
     loading,
     error,
 
-    // Actions
     fetchOrganisations,
     createOrganisation,
     updateOrganisation,

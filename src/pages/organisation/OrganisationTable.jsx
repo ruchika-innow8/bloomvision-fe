@@ -235,40 +235,6 @@ export default function OrganisationTable({ data, loading }) {
     }
   };
 
-  // Generate avatar from business name
-  const getAvatarProps = (businessName) => {
-    if (!businessName) return { children: "?" };
-    const initials = businessName
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-
-    // Generate color based on name
-    const colors = [
-      "#FF6B6B",
-      "#4ECDC4",
-      "#45B7D1",
-      "#96CEB4",
-      "#FFEAA7",
-      "#DDA0DD",
-      "#98D8C8",
-    ];
-    const colorIndex = businessName.length % colors.length;
-
-    return {
-      children: initials,
-      sx: {
-        bgcolor: colors[colorIndex],
-        color: "white",
-        width: 32,
-        height: 32,
-        fontSize: "0.875rem",
-      },
-    };
-  };
-
   return (
     <Box
       sx={{ position: "relative", minHeight: "200px", width: "100%", pb: 2 }}
@@ -520,7 +486,23 @@ export default function OrganisationTable({ data, loading }) {
                     </TableCell>
 
                     <TableCell>
-                      <Avatar {...getAvatarProps(org.business_name)} />
+                      <Avatar
+                        src={org.owner?.profile_picture}
+                        alt={org.owner?.name || org.business_name}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          bgcolor: org.owner?.profile_picture
+                            ? "transparent"
+                            : undefined,
+                        }}
+                      >
+                        {!org.owner?.profile_picture
+                          ? (org.owner?.name || org.business_name || "N/A")
+                              .charAt(0)
+                              .toUpperCase()
+                          : null}
+                      </Avatar>
                     </TableCell>
 
                     <TableCell>

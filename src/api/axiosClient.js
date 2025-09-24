@@ -3,7 +3,7 @@ import axios from "axios";
 import store from "../store/store";
 import { logout } from "../store/slices/authSlice";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "http://192.168.1.17:5000";
 
 // Create axios instance
 const axiosInstance = axios.create({
