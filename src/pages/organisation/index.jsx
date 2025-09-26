@@ -8,11 +8,12 @@ export default function OrganisationPage() {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (!hasFetched.current) {
+    // Only fetch if we don't have organisations or if explicitly needed
+    if (!hasFetched.current && (!organisations || organisations.length === 0)) {
       fetchOrganisations();
       hasFetched.current = true;
     }
-  }, [fetchOrganisations]);
+  }, [fetchOrganisations, organisations]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>

@@ -206,10 +206,17 @@ const TemplateAccessModal = ({
   onClose,
   onSave,
   organisations, // Changed from organisation to organisations
-  title = "Control Template Access",
   isLoading = false,
-  onRefreshOrganisations, // Add this prop
+  operationType = "bulk", // Add this new prop: "bulk" or "owner-specific"
 }) => {
+  // Compute the actual title based on operation type
+  const computedTitle =
+    operationType === "owner-specific"
+      ? `Control Template Access for ${
+          organisations?.[0]?.business_name || "Organisation"
+        }`
+      : "Bulk Template Access";
+
   const [selectedTemplates, setSelectedTemplates] = useState(new Set());
   const [expandedCategories, setExpandedCategories] = useState(
     new Set(["Centerpiece", "Bouquet", "Ceremony"])
@@ -228,17 +235,38 @@ const TemplateAccessModal = ({
   // Initialize selected templates when modal opens
   useEffect(() => {
     if (open && organisations && organisations.length > 0) {
-      // For bulk operations, we'll show all templates and let user choose
-      // In the future, you could implement logic to show intersection/union of selected templates
-      setSelectedTemplates(new Set());
+      if (operationType === "owner-specific") {
+        // For owner-specific operations, pre-check existing templates
+        const currentTemplates = organisations[0].skeletons || [];
+        // Validate that all skeleton IDs exist in our template list
+        const validTemplates = currentTemplates.filter((templateId) =>
+          FLOWER_TEMPLATES.some((template) => template.id === templateId)
+        );
+        setSelectedTemplates(new Set(validTemplates));
+      } else {
+        // For bulk operations, start fresh with no pre-checked templates
+        setSelectedTemplates(new Set());
+      }
       setExpandedCategories(new Set(["Centerpiece", "Bouquet", "Ceremony"]));
       setError("");
     }
-  }, [open, organisations]);
+  }, [open, organisations, operationType]);
 
   const handleClose = () => {
     if (!isLoading) {
-      setSelectedTemplates(new Set());
+      // Reset to appropriate state based on operation type
+      if (
+        operationType === "owner-specific" &&
+        organisations &&
+        organisations.length > 0
+      ) {
+        // Reset to current templates for owner-specific
+        const currentTemplates = organisations[0].skeletons || [];
+        setSelectedTemplates(new Set(currentTemplates));
+      } else {
+        // Reset to empty for bulk operations
+        setSelectedTemplates(new Set());
+      }
       setExpandedCategories(new Set(["Centerpiece", "Bouquet", "Ceremony"]));
       setError("");
       onClose();
@@ -301,9 +329,9 @@ const TemplateAccessModal = ({
       await onSave(payload);
 
       // Call refresh callback after successful save to get updated data
-      if (onRefreshOrganisations) {
-        await onRefreshOrganisations();
-      }
+      // if (onRefreshOrganisations) {
+      //   await onRefreshOrganisations();
+      // }
 
       onClose();
     } catch (error) {
@@ -361,7 +389,7 @@ const TemplateAccessModal = ({
     <Dialog
       open={open}
       onClose={handleClose}
-      title={title}
+      title={computedTitle}
       actions={actions}
       maxWidth="md"
       fullWidth

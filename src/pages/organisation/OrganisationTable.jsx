@@ -74,6 +74,7 @@ export default function OrganisationTable({ data, loading }) {
     organisation: null,
   });
   const [successMessage, setSuccessMessage] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false); // New state for loading
 
   const rows = useMemo(() => data ?? [], [data]);
   const allSelected = rows.length > 0 && selectedIds.length === rows.length;
@@ -135,11 +136,12 @@ export default function OrganisationTable({ data, loading }) {
 
   const openTemplateAccessModal = (organisation = null) => {
     if (organisation) {
-      // Single organisation mode
+      // Owner-specific mode
       setTemplateAccessModal({
         open: true,
         organisations: [organisation],
         isLoading: false,
+        operationType: "owner-specific",
       });
     } else if (selectedOrganisations.length > 0) {
       // Bulk mode
@@ -147,6 +149,7 @@ export default function OrganisationTable({ data, loading }) {
         open: true,
         organisations: selectedOrganisations,
         isLoading: false,
+        operationType: "bulk",
       });
     }
   };
@@ -160,7 +163,10 @@ export default function OrganisationTable({ data, loading }) {
   };
 
   const handleTemplateAccessSave = async (payload) => {
+    if (isUpdating) return; // Prevent multiple simultaneous updates
+
     try {
+      setIsUpdating(true);
       setTemplateAccessModal((prev) => ({ ...prev, isLoading: true }));
 
       // Call the API for each selected organisation
@@ -173,6 +179,7 @@ export default function OrganisationTable({ data, loading }) {
         return updateTrialDate(orgPayload);
       });
 
+      // Wait for all updates to complete
       await Promise.all(updatePromises);
 
       setSuccessMessage(
@@ -183,19 +190,20 @@ export default function OrganisationTable({ data, loading }) {
         }`
       );
 
-      // Close modal only after successful API response
+      // Close modal and refresh data after successful update
       setTimeout(async () => {
         closeTemplateAccessModal();
         setSuccessMessage("");
-        // Clear selected checkboxes after successful save
         setSelectedIds([]);
-        // Refresh the organizations data
+        // Only call fetchOrganisations once - remove duplicate call
         await fetchOrganisations();
-      }, 1000); // Give user time to see success message
+      }, 1000);
     } catch (error) {
       console.error("Failed to update template access:", error);
       setTemplateAccessModal((prev) => ({ ...prev, isLoading: false }));
-      throw error; // Re-throw to show error in modal
+      throw error;
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -280,7 +288,7 @@ export default function OrganisationTable({ data, loading }) {
         </Box>
       )}
 
-      {loading && (
+      {loading || isUpdating ? ( // Use combined loading state
         <Box
           sx={{
             position: "absolute",
@@ -297,7 +305,7 @@ export default function OrganisationTable({ data, loading }) {
         >
           <CircularProgress />
         </Box>
-      )}
+      ) : null}
       <TableContainer
         component={Paper}
         sx={{
@@ -627,6 +635,7 @@ export default function OrganisationTable({ data, loading }) {
           organisations={templateAccessModal.organisations} // Changed from organisation to organisations
           isLoading={templateAccessModal.isLoading}
           onRefreshOrganisations={fetchOrganisations}
+          operationType={templateAccessModal.operationType}
         />
 
         <DeleteConfirmationModal

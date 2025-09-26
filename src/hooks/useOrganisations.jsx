@@ -81,6 +81,15 @@ export const useOrganisations = () => {
 
         const data = await updateTrialDateApi(payload);
 
+        // Optimistically update the local state
+        dispatch(
+          updateOrganisationTemplates({
+            id: payload.owner_id,
+            templates_allowed: payload.skeletons.length,
+            skeletons: payload.skeletons,
+          })
+        );
+
         return data;
       } catch (err) {
         // Rollback optimistic update on error
@@ -91,7 +100,7 @@ export const useOrganisations = () => {
         dispatch(setLoading(false));
       }
     },
-    [dispatch, organisations]
+    [dispatch]
   );
 
   // Delete organisation
