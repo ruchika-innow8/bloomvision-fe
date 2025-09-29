@@ -34,7 +34,12 @@ export default function Navigation({ drawerWidth }) {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const { handleDrawerToggle, isCollapsed, toggleCollapse } = useSidebar();
+  const {
+    handleDrawerToggle,
+    isCollapsed,
+    toggleCollapse,
+    handleUserMenuToggle,
+  } = useSidebar();
 
   // Get dynamic page title
   const pageTitle = getPageTitle(location.pathname);
@@ -44,10 +49,12 @@ export default function Navigation({ drawerWidth }) {
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
+    handleUserMenuToggle(true); // Notify when menu opens
   };
 
   const handleClose = () => {
     setAnchorEl(null);
+    handleUserMenuToggle(false); // Notify when menu closes
   };
 
   const handleLogout = () => {

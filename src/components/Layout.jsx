@@ -9,11 +9,13 @@ const drawerWidth = 240; // Standard drawer width
 const collapsedDrawerWidth = 60; // Collapsed drawer width
 
 export default function Layout({ children }) {
-  const { isCollapsed, isMobile } = useSidebar();
+  const { isCollapsed, isMobile, isUserMenuOpen } = useSidebar(); // Add isUserMenuOpen
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   const currentDrawerWidth =
-    isCollapsed && !isMobile ? collapsedDrawerWidth : drawerWidth;
+    (isCollapsed || isUserMenuOpen) && !isMobile
+      ? collapsedDrawerWidth
+      : drawerWidth; // Modified: Auto-collapse when user menu is open
 
   return (
     <Box sx={{ display: "flex" }}>

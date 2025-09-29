@@ -37,6 +37,7 @@ export default function Sidebar({ drawerWidth }) {
     handleDrawerToggle,
     isCollapsed,
     toggleCollapse,
+    isUserMenuOpen, // Add this line
   } = useSidebar();
 
   const menuItems = [
@@ -51,7 +52,7 @@ export default function Sidebar({ drawerWidth }) {
   return (
     <Drawer
       sx={{
-        width: isCollapsed && !isMobile ? 60 : drawerWidth, // Collapsed width for desktop
+        width: (isCollapsed || isUserMenuOpen) && !isMobile ? 60 : drawerWidth, // Modified: Auto-collapse when user menu is open
         flexShrink: 0,
         overflow: "hidden", // Prevent scrollbars
         transition: (theme) =>
@@ -60,7 +61,8 @@ export default function Sidebar({ drawerWidth }) {
             duration: theme.transitions.duration.enteringScreen,
           }),
         "& .MuiDrawer-paper": {
-          width: isCollapsed && !isMobile ? 60 : drawerWidth, // Collapsed width for desktop
+          width:
+            (isCollapsed || isUserMenuOpen) && !isMobile ? 60 : drawerWidth, // Modified: Auto-collapse when user menu is open
           boxSizing: "border-box",
           bgcolor: "#222e3c", // Dark background for the sidebar
           color: "#ffffff",
@@ -89,7 +91,8 @@ export default function Sidebar({ drawerWidth }) {
       >
         <Toolbar
           sx={{
-            justifyContent: isCollapsed ? "center" : "flex-start",
+            justifyContent:
+              isCollapsed || isUserMenuOpen ? "center" : "flex-start", // Modified: Auto-collapse when user menu is open
             py: 2,
             minHeight: "64px !important",
           }}
@@ -98,7 +101,10 @@ export default function Sidebar({ drawerWidth }) {
             variant="h6"
             noWrap
             component="div"
-            sx={{ fontWeight: 700, display: isCollapsed ? "none" : "block" }}
+            sx={{
+              fontWeight: 700,
+              display: isCollapsed || isUserMenuOpen ? "none" : "block",
+            }}
           >
             BloomVision
           </Typography>
@@ -118,7 +124,8 @@ export default function Sidebar({ drawerWidth }) {
                   onClick={() => navigate(item.path)}
                   sx={{
                     minHeight: 48,
-                    justifyContent: isCollapsed ? "center" : "flex-start",
+                    justifyContent:
+                      isCollapsed || isUserMenuOpen ? "center" : "flex-start", // Modified: Auto-collapse when user menu is open
                     px: 2.5,
                     "&:hover": {
                       bgcolor: "rgba(255,255,255,0.08)",
@@ -135,7 +142,7 @@ export default function Sidebar({ drawerWidth }) {
                   <ListItemIcon
                     sx={{
                       minWidth: 0,
-                      mr: isCollapsed ? "auto" : 3,
+                      mr: isCollapsed || isUserMenuOpen ? "auto" : 3, // Modified: Auto-collapse when user menu is open
                       justifyContent: "center",
                       color: "#ffffff",
                     }}
@@ -145,7 +152,7 @@ export default function Sidebar({ drawerWidth }) {
                   <ListItemText
                     primary={item.text}
                     sx={{
-                      opacity: isCollapsed ? 0 : 1,
+                      opacity: isCollapsed || isUserMenuOpen ? 0 : 1, // Modified: Auto-collapse when user menu is open
                       transition: "opacity 0.2s ease",
                       "& span": { fontWeight: 500 },
                     }}

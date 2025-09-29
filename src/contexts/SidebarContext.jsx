@@ -11,6 +11,7 @@ export function SidebarProvider({ children }) {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleDrawerToggle = useCallback(() => {
     setMobileOpen(!mobileOpen);
@@ -26,6 +27,22 @@ export function SidebarProvider({ children }) {
     setIsCollapsed((prev) => !prev);
   }, []);
 
+  // function to handle user menu state
+  const handleUserMenuToggle = useCallback(
+    (isOpen) => {
+      setIsUserMenuOpen(isOpen);
+      // Auto-collapse sidebar when user menu opens (only on desktop)
+      if (isOpen && !isMobile) {
+        setIsCollapsed(true);
+      }
+      // Auto-expand sidebar when user menu closes (only on desktop)
+      else if (!isOpen && !isMobile) {
+        setIsCollapsed(false);
+      }
+    },
+    [isMobile]
+  );
+
   const value = {
     isMobile,
     mobileOpen,
@@ -33,6 +50,8 @@ export function SidebarProvider({ children }) {
     handleDrawerClose,
     isCollapsed,
     toggleCollapse,
+    isUserMenuOpen,
+    handleUserMenuToggle,
   };
 
   return (
