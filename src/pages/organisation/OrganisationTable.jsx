@@ -56,6 +56,7 @@ export default function OrganisationTable({ data, loading }) {
     // updateOrganisation,
     updateTrialDate,
     fetchOrganisations,
+    refreshOrganisationsData,
   } = useOrganisations();
   const [selectedIds, setSelectedIds] = useState([]);
   const [trialDateModal, setTrialDateModal] = useState({
@@ -113,6 +114,10 @@ export default function OrganisationTable({ data, loading }) {
     try {
       setTrialDateModal((prev) => ({ ...prev, isLoading: true }));
       await updateTrialDate(payload);
+
+      // Refresh data from API after successful trial date update
+      await refreshOrganisationsData();
+
       setSuccessMessage(
         `Trial date updated successfully for ${trialDateModal.organisation.business_name}`
       );
@@ -195,8 +200,8 @@ export default function OrganisationTable({ data, loading }) {
         closeTemplateAccessModal();
         setSuccessMessage("");
         setSelectedIds([]);
-        // Only call fetchOrganisations once - remove duplicate call
-        await fetchOrganisations();
+        // Use the new refresh function
+        await refreshOrganisationsData();
       }, 1000);
     } catch (error) {
       console.error("Failed to update template access:", error);

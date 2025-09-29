@@ -13,6 +13,7 @@ import {
   removeOrganisation,
   clearError,
   updateOrganisationTemplates,
+  updateTrialDate,
 } from "../store/slices/organisationSlice";
 
 export const useOrganisations = () => {
@@ -21,37 +22,25 @@ export const useOrganisations = () => {
     (state) => state.organisation
   );
 
+  // Shared function to fetch and update organizations
+  const fetchOrganizationsData = useCallback(async () => {
+    const data = await getOrganisationsApi();
+    dispatch(setOrganisations(data));
+    return data;
+  }, [dispatch]);
+
   // Fetch all organisations
   const fetchOrganisations = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       dispatch(clearError());
-      const data = await getOrganisationsApi();
-      dispatch(setOrganisations(data));
+      await fetchOrganizationsData();
     } catch (err) {
       dispatch(setError(err.message || "Failed to fetch organisations"));
     } finally {
       dispatch(setLoading(false));
     }
-  }, [dispatch]);
-
-  // Create new organisation
-  const createOrganisation = useCallback(
-    async (organisationData) => {
-      try {
-        dispatch(setLoading(true));
-        dispatch(clearError());
-
-        return null;
-      } catch (err) {
-        dispatch(setError(err.message || "Failed to create organisation"));
-        throw err;
-      } finally {
-        dispatch(setLoading(false));
-      }
-    },
-    [dispatch]
-  );
+  }, [dispatch, fetchOrganizationsData]);
 
   // Update existing organisation
   const updateOrganisation = useCallback(
@@ -90,11 +79,20 @@ export const useOrganisations = () => {
           })
         );
 
+        // Update trial_ends field if provided in the response
+        if (data?.trial_ends) {
+          dispatch(
+            updateTrialDate({
+              id: payload.owner_id,
+              trial_ends: data.trial_ends,
+            })
+          );
+        }
+
         return data;
       } catch (err) {
         // Rollback optimistic update on error
         dispatch(setError(err.message || "Failed to update trial date"));
-
         throw err;
       } finally {
         dispatch(setLoading(false));
@@ -121,6 +119,16 @@ export const useOrganisations = () => {
     [dispatch]
   );
 
+  // Refresh organisations data from API
+  const refreshOrganisationsData = useCallback(async () => {
+    try {
+      await fetchOrganizationsData();
+    } catch (err) {
+      console.error("Failed to refresh organisations data:", err);
+      // Don't set error here as this is a background refresh
+    }
+  }, [dispatch, fetchOrganizationsData]);
+
   // Clear any errors
   const clearOrganisationError = useCallback(() => {
     dispatch(clearError());
@@ -132,10 +140,10 @@ export const useOrganisations = () => {
     error,
 
     fetchOrganisations,
-    createOrganisation,
     updateOrganisation,
     updateTrialDate,
     deleteOrganisation,
+    refreshOrganisationsData,
     clearOrganisationError,
   };
 };

@@ -3,8 +3,6 @@
 import axiosInstance from "./axiosClient";
 import { mockOrganisations } from "./mockData";
 
-const API_BASE_URL = "http://192.168.1.17:5000";
-
 // Get all organisations
 export const getOrganisationsApi = async () => {
   try {
@@ -96,6 +94,9 @@ export const updateTrialDateApi = async (payload) => {
     return {
       success: true,
       message: "Trial date updated successfully (mock)",
+      trial_ends:
+        payload.trial_ends ||
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Default to 30 days from now
       data: payload,
     };
   }

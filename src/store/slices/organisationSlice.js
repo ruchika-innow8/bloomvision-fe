@@ -19,21 +19,11 @@ const organisationSlice = createSlice({
     setError: (state, action) => {
       state.error = action.payload;
     },
-    addOrganisation: (state, action) => {
-      state.organisations.unshift(action.payload);
-    },
     updateOrganisation: (state, action) => {
       const { id, data } = action.payload;
       const index = state.organisations.findIndex((org) => org.id === id);
       if (index !== -1) {
         state.organisations[index] = { ...state.organisations[index], ...data };
-      }
-    },
-    updateTrialDate: (state, action) => {
-      const { id, field, value } = action.payload;
-      const index = state.organisations.findIndex((org) => org.id === id);
-      if (index !== -1) {
-        state.organisations[index][field] = value;
       }
     },
     updateOrganisationTemplates: (state, action) => {
@@ -42,9 +32,17 @@ const organisationSlice = createSlice({
       if (index !== -1) {
         state.organisations[index].templates_allowed = templates_allowed;
         state.organisations[index].allowed_templates = templates_allowed;
+        // Always update skeletons if provided, even if it's an empty array
         if (skeletons !== undefined) {
           state.organisations[index].skeletons = skeletons;
         }
+      }
+    },
+    updateTrialDate: (state, action) => {
+      const { id, trial_ends } = action.payload;
+      const index = state.organisations.findIndex((org) => org.id === id);
+      if (index !== -1) {
+        state.organisations[index].trial_ends = trial_ends;
       }
     },
     removeOrganisation: (state, action) => {
@@ -62,10 +60,9 @@ export const {
   setOrganisations,
   setLoading,
   setError,
-  addOrganisation,
   updateOrganisation,
-  updateTrialDate,
   updateOrganisationTemplates,
+  updateTrialDate,
   removeOrganisation,
   clearError,
 } = organisationSlice.actions;

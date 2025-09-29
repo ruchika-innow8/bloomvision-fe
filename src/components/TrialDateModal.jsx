@@ -39,7 +39,7 @@ const TrialDateModal = ({
 
       // Prepare the API payload according to the specification
       const payload = {
-        skeletons: [], // Empty array as per the API spec
+        skeletons: organisation.skeletons || [], // Use existing skeletons from the organization
         [field]: formattedDate,
         owner_id: organisation.owner?.id || organisation.owner_id,
       };
